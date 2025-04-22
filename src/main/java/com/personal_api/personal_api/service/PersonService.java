@@ -3,7 +3,6 @@ package com.personal_api.personal_api.service;
 import com.personal_api.personal_api.model.Person;
 import com.personal_api.personal_api.repo.PersonRepo;
 import org.springframework.stereotype.Service;
-import org.springframework.web.ErrorResponseException;
 
 import java.util.List;
 import java.util.Optional;
