@@ -17,7 +17,7 @@ public class PersonController {
     }
 
     @PostMapping("/Register")
-    public String  register(@RequestBody @Valid Person person) {
+    public String  register(@RequestBody Person person) {
         return personService.register(person);
     }
     @PostMapping("/Login")
