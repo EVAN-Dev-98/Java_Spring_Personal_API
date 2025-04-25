@@ -28,14 +28,22 @@ public class PersonService {
             return "Email is Required!";
 
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
-        Pattern pattern = Pattern.compile(emailRegex);
-        Matcher matcher = pattern.matcher(person.getEmail());
-        if (!matcher.matches())
+        Pattern emailpattern = Pattern.compile(emailRegex);
+        Matcher emailmatcher = emailpattern.matcher(person.getEmail());
+        if (!emailmatcher.matches())
             return "Invalid email format!";
 
         if (personRepo.findByEmail(person.getEmail()).isPresent())
             return "The Email is already registered!";
 
+        String passwordRegex = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$";
+        Pattern passwordpattern = Pattern.compile(passwordRegex);
+        Matcher passwordmatcher = passwordpattern.matcher(person.getPassword());
+
+        if (!passwordmatcher.matches())
+            return "Password must be at least 8 characters and contain both letters and numbers!";
+
+        person.setRole("normal");
         String HashedPassword = Password.HashPassword(person.getPassword());
         person.setPassword(HashedPassword);
         personRepo.save(person);
@@ -68,6 +76,7 @@ public class PersonService {
             person.get().setLast_name(updatedPerson.getLast_name());
             person.get().setEmail(updatedPerson.getEmail());
             person.get().setPhone(updatedPerson.getPhone());
+            person.get().setBirth_date(updatedPerson.getBirth_date());
             personRepo.save(person.get());
             return "Updated Successfully";
         } else
