@@ -6,6 +6,6 @@
 
 ###
 
-<p align="left">- register a new user<br>- login user<br>- show user information<br>- update User<br>- delete user</p>
+<p align="left">- register a new user (Validation)<br>- login user (get JWT token)<br>- show user information<br>- update User<br>- delete user<br><br>---------<br>authentication complated<br>soon add authorization</p>
 
 ###
