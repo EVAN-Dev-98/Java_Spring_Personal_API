@@ -1,43 +1,43 @@
 package com.personal_api.personal_api.controller;
 
-import com.personal_api.personal_api.service.LoginRequest;
+import com.personal_api.personal_api.dto.LoginRequestDTO;
+import com.personal_api.personal_api.dto.PersonDTO;
 import com.personal_api.personal_api.model.Person;
 import com.personal_api.personal_api.service.PersonService;
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/User")
+@RequestMapping("/user")
 public class PersonController {
     final PersonService personService;
     public PersonController(PersonService personService) {
         this.personService = personService;
     }
 
-    @PostMapping("/Register")
+    @PostMapping("/register")
     public String  register(@RequestBody Person person) {
         return personService.register(person);
     }
-    @PostMapping("/Login")
-    public String login(@RequestBody LoginRequest loginRequest) {
-        return personService.login(loginRequest);
+    @PostMapping("/login")
+    public String login(@RequestBody LoginRequestDTO loginRequestDTO) {
+        return personService.login(loginRequestDTO);
     }
-    @GetMapping("/GetAll")
-    public List<Person> getAll() {
+    @GetMapping("/getAll")
+    public List<PersonDTO> getAll() {
         return personService.getAll();
     }
-    @GetMapping("/FindById")
-    public Person findById(@RequestParam("id") int id) {
+    @GetMapping("/findById")
+    public PersonDTO findById(@RequestParam("id") int id) {
         return personService.findById(id);
     }
-    @PutMapping("/Update")
+    @PutMapping("/update")
     public String update(@RequestParam("id") int id, @RequestBody Person person) {
         return personService.update(id, person);
     }
-    @DeleteMapping("/Delete")
-    public String delete(@RequestBody int id) {
+    @DeleteMapping("/delete")
+    public String delete(@RequestParam("id") int id) {
         return personService.delete(id);
     }
 }

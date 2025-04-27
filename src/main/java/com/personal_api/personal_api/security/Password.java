@@ -1,4 +1,4 @@
-package com.personal_api.personal_api.service;
+package com.personal_api.personal_api.security;
 
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

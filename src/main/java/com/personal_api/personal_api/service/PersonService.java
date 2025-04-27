@@ -1,21 +1,29 @@
 package com.personal_api.personal_api.service;
 
 import java.util.*;
+
+import com.personal_api.personal_api.dto.LoginRequestDTO;
+import com.personal_api.personal_api.dto.PersonDTO;
 import com.personal_api.personal_api.model.Person;
 import com.personal_api.personal_api.repo.PersonRepo;
+import com.personal_api.personal_api.security.Password;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import io.jsonwebtoken.security.Keys;
-import java.security.Key;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
 public class PersonService {
     final PersonRepo personRepo;
-
+    @Value("${jwt.secret}")
+    private String secretKey;
     public PersonService(PersonRepo personRepo) {
         this.personRepo = personRepo;
     }
@@ -49,15 +57,14 @@ public class PersonService {
         personRepo.save(person);
         return "Registered Successfully";
     }
-    public String login(LoginRequest loginRequest) {
-        Optional<Person> person = personRepo.findByEmail(loginRequest.getEmail());
+    public String login(LoginRequestDTO loginRequestDTO) {
+        Optional<Person> person = personRepo.findByEmail(loginRequestDTO.getEmail());
         if (person.isEmpty())
             return ("Email does not exist! Do Register First!");
 
-        if (!Password.CheckPassword(loginRequest.getPassword(), person.get().getPassword()))
+        if (!Password.CheckPassword(loginRequestDTO.getPassword(), person.get().getPassword()))
             return ("Incorrect Password!");
 
-        Key secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
         JwtBuilder builder = Jwts.builder();
         builder.claim("email", person.get().getEmail());
         builder.claim("role", person.get().getRole());
@@ -70,30 +77,74 @@ public class PersonService {
         return person.get().getToken();
     }
     public String update(int id, Person updatedPerson) {
-        Optional<Person> person = personRepo.findById(id);
-        if (person.isPresent()) {
-            person.get().setFirst_name(updatedPerson.getFirst_name());
-            person.get().setLast_name(updatedPerson.getLast_name());
-            person.get().setEmail(updatedPerson.getEmail());
-            person.get().setPhone(updatedPerson.getPhone());
-            person.get().setBirth_date(updatedPerson.getBirth_date());
-            personRepo.save(person.get());
-            return "Updated Successfully";
-        } else
+        String currentRole = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().findFirst().map(Object::toString).orElse("");
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<Person> personOptional = personRepo.findById(id);
+        if (personOptional.isEmpty())
             return "Cant Find Person!";
+        Person person = personOptional.get();
+
+        if (!person.getEmail().equals(currentEmail) && currentRole.equals("normal"))
+            return "Access denied!";
+
+        if (updatedPerson.getFirst_name() != null && !updatedPerson.getFirst_name().isEmpty())
+            person.setFirst_name(updatedPerson.getFirst_name());
+        if (updatedPerson.getLast_name() != null && !updatedPerson.getLast_name().isEmpty())
+            person.setLast_name(updatedPerson.getLast_name());
+        if (updatedPerson.getEmail() != null && !updatedPerson.getEmail().isEmpty())
+            person.setEmail(updatedPerson.getEmail());
+        if (updatedPerson.getPhone() != null && !updatedPerson.getPhone().isEmpty())
+            person.setPhone(updatedPerson.getPhone());
+        if (updatedPerson.getBirth_date() != null)
+            person.setBirth_date(updatedPerson.getBirth_date());
+        personRepo.save(person);
+        return "Updated Successfully";
     }
-    public Person findById(int id) {
+    public PersonDTO findById(int id) {
+        String currentRole = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().findFirst().map(Object::toString).orElse("");
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+
         Optional<Person> optionalPerson = personRepo.findById(id);
-        if (optionalPerson.isPresent())
-            return optionalPerson.get();
-        else
-            throw new RuntimeException("Cant Find Person!");
+        if (optionalPerson.isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cant Find Person!");
+
+        if (!optionalPerson.get().getEmail().equals(currentEmail) && currentRole.equals("normal"))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied!");
+
+        PersonDTO personDTO = new PersonDTO();
+        personDTO.setId(optionalPerson.get().getId());
+        personDTO.setFirst_name(optionalPerson.get().getFirst_name());
+        personDTO.setLast_name(optionalPerson.get().getLast_name());
+        personDTO.setEmail(optionalPerson.get().getEmail());
+        personDTO.setPhone(optionalPerson.get().getPhone());
+        personDTO.setBirth_date(optionalPerson.get().getBirth_date());
+        return personDTO;
     }
-    public List<Person> getAll() {
-        return personRepo.findAll();
+    public List<PersonDTO> getAll() {
+        String currentRole = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().findFirst().map(Object::toString).orElse("");
+        if (!currentRole.equals("Admin"))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied!");
+        List<PersonDTO> List_personDTO = new ArrayList<>();
+        for (Person person : personRepo.findAll()) {
+            PersonDTO personDTO = new PersonDTO();
+            personDTO.setFirst_name(person.getFirst_name());
+            personDTO.setLast_name(person.getLast_name());
+            personDTO.setEmail(person.getEmail());
+            personDTO.setPhone(person.getPhone());
+            personDTO.setBirth_date(person.getBirth_date());
+            List_personDTO.add(personDTO);
+        }
+        return List_personDTO;
     }
     public String delete(int id) {
-        personRepo.deleteById(id);
+        String currentRole = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().findFirst().map(Object::toString).orElse("");
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<Person> optionalPerson = personRepo.findById(id);
+        if (optionalPerson.isEmpty())
+            return "Cant Find Person!";
+        if (currentRole.equals("normal") && optionalPerson.get().getEmail().equals(currentEmail))
+            return "Access denied!";
+        personRepo.delete(optionalPerson.get());
         return "Person deleted";
     }
 }
